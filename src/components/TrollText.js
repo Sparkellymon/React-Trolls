@@ -1,6 +1,6 @@
 import React from "react";
 
-class TrollButton extends React.Component {
+class TrollText extends React.Component {
     constructor(props) {
         super(props);
 
@@ -42,4 +42,4 @@ class TrollButton extends React.Component {
     };
 }
 
-export default TrollButton;
+export default TrollText;
