@@ -1,25 +1,25 @@
-import React from "react";
-import "./../style/App.css"
-import TrollText from "./TrollText";
-import FunctionalTrollText from "./FunctionalTrollText.tsx";
-import ExplodingCross from "./ExplodingCross.tsx";
-import Combined from "./Combined.tsx";
-class App extends React.Component {
-    constructor(props) {
-        super(props);
-    }
-    pageWidth  = Math.floor(document.documentElement.scrollWidth);
-    pageHeight = Math.floor(document.documentElement.scrollHeight);
-    render = () => {
-        return (
-            <div className="StyledApp">
-                {/* <TrollText>🐉</TrollText> */}
-                {/* <ExplodingCross pageWidth={this.pageWidth} pageHeight={this.pageHeight}></ExplodingCross>
-                <FunctionalTrollText trolltext="🐢" pageWidth={this.pageWidth} pageHeight={this.pageHeight}></FunctionalTrollText> */}
-                <Combined trollText="🐢" pageHeight={this.pageHeight} pageWidth={this.pageWidth}/>
-            </div>
-        );
-    };
-}
+import "./../style/App.css";
+import React, { useEffect, useState } from "react";
+import TrollManager from "./TrollManager.tsx";
+
+const App = (props) => {
+    const [boundsX, setBoundsX] = useState(0);
+    const [boundsY, setBoundsY] = useState(0);
+
+    // initial render
+    useEffect(() => {
+        let pageWidth = Math.floor(document.documentElement.scrollWidth);
+        let pageHeight = Math.floor(document.documentElement.scrollHeight);
+        setBoundsX(pageWidth);
+        setBoundsY(pageHeight);
+        console.log(`[INFO] (App / UE_1) ${pageWidth} ${pageHeight}`);
+    }, []);
+
+    return (
+        <div className="app">
+            <TrollManager trollText="🐢" boundsX={boundsX} boundsY={boundsY} />
+        </div>
+    );
+};
 
 export default App;
