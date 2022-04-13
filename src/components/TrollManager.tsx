@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 // @ts-ignore
 import ExplodingCrossText from "./ExplodingCrossText.tsx";
 // @ts-ignore
@@ -35,7 +35,7 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
     }, [props.boundsX, props.boundsY]);
 
     // UTILS & HELPERS
-    const getNewTrollPosition = (mouseX, mouseY) => {
+    const getRandomNewTrollPosition = (mouseX, mouseY, trollRef) => {
         const signX = Math.random() < 0.5 ? 1 : -1;
         const signY = Math.random() < 0.5 ? 1 : -1;
         // TODO set bounds and rebouncing
@@ -51,6 +51,87 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
         setExploded(newExploded);
     };
 
+    const getDirectedNewTrollPosition = (mouseX, mouseY, trollRef) => {
+        // Getting line equation and calculating random points
+        const trollCenterX = trollX + Math.floor(trollRef.current.offsetWidth / 2);
+        const trollCenterY = trollY + Math.floor(trollRef.current.offsetHeight / 2);
+
+        const newTrollCoordinates = getValidRandomPoint(trollCenterX, trollCenterY, mouseX, mouseY);
+
+        var newTrollX = trollX;
+        var newTrollY = trollY;
+        if (newTrollCoordinates.x) {
+            newTrollX = newTrollCoordinates.x;
+            newTrollY = newTrollCoordinates.y;
+        }
+
+        // detect collision using helper
+        const newExploded = false;
+
+        // set states
+        setTrollX(newTrollX);
+        setTrollY(newTrollY);
+        setExploded(newExploded);
+    };
+
+    const getValidRandomPoint = (trollCenterX, trollCenterY, mouseX, mouseY, maxRadius = 300) => {
+        const slopeIntercept = getSlopeIntercept(trollCenterX, trollCenterY, mouseX, mouseY);
+
+        var validX = [];
+        for (var xi = 0; xi < props.boundsX; xi++) {
+            var yi = slopeIntercept(xi);
+
+            // checking within bounds
+            if (
+                yi < props.boundsY &&
+                yi > 100 &&
+                getDistance(trollCenterX, trollCenterY, xi, yi) < maxRadius
+            ) {
+                if (trollCenterX > mouseX && trollCenterY > mouseY) {
+                    if (xi > trollCenterX && yi > trollCenterY) {
+                        validX.push(xi);
+                    }
+                } else if (trollCenterX > mouseX && trollCenterY < mouseY) {
+                    if (xi > trollCenterX && yi < trollCenterY) {
+                        validX.push(xi);
+                    }
+                } else if (trollCenterX < mouseX && trollCenterY > mouseY) {
+                    if (xi < trollCenterX && yi > trollCenterY) {
+                        validX.push(xi);
+                    }
+                } else if (trollCenterX < mouseX && trollCenterY < mouseY) {
+                    if (xi < trollCenterX && yi < trollCenterY) {
+                        validX.push(xi);
+                    }
+                }
+            }
+        }
+
+        if (validX.length > 0) {
+            var randomX = validX[Math.floor(Math.random() * validX.length)];
+            return {
+                x: randomX,
+                y: slopeIntercept(randomX),
+            };
+        } else {
+            return { x: null, y: null };
+        }
+    };
+
+    const getDistance = (x1, y1, x2, y2) => {
+        var a = x1 - x2;
+        var b = y1 - y2;
+        return Math.sqrt(a * a + b * b);
+    };
+
+    const getSlopeIntercept = (x1, y1, x2, y2) => {
+        const slope = (y2 - y1) / (x2 - x1);
+        return (x) => {
+            const y = slope * (x - x1) + y1;
+            return y;
+        };
+    };
+
     // detect collision
 
     const takeMeThere = () => {
@@ -60,20 +141,17 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
             setTimeout(() => setExploded(true), 350);
         }
     };
+    // UTILS & HELPERS
 
     return (
         <div>
-            <ExplodingCrossText
-                crossX={crossX}
-                crossY={crossY}
-                exploded={exploded}
-            />
+            <ExplodingCrossText crossX={crossX} crossY={crossY} exploded={exploded} />
             <TrollText
                 trollText={props.trollText}
                 trollX={trollX}
                 trollY={trollY}
                 exploded={exploded}
-                getNewTrollPosition={getNewTrollPosition}
+                getNewTrollPosition={getDirectedNewTrollPosition}
             />
             <button onClick={takeMeThere}>
                 {!exploded ? "(╯°□°）╯︵ ┻━┻)" : "┬─┬ ノ( ゜-゜ノ)"}

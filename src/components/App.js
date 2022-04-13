@@ -8,8 +8,8 @@ const App = (props) => {
 
     // initial render
     useEffect(() => {
-        let pageWidth = Math.floor(document.documentElement.scrollWidth);
-        let pageHeight = Math.floor(document.documentElement.scrollHeight);
+        let pageWidth = Math.floor(document.documentElement.scrollWidth) - 100;
+        let pageHeight = Math.floor(document.documentElement.scrollHeight) - 100;
         setBoundsX(pageWidth);
         setBoundsY(pageHeight);
         console.log(`[INFO] (App / UE_1) ${pageWidth} ${pageHeight}`);
