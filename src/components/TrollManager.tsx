@@ -16,6 +16,8 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
     const [trollX, setTrollX] = useState(0);
     const [trollY, setTrollY] = useState(0);
     const [exploded, setExploded] = useState(false);
+    var crossRef = useRef(null);
+    var trollRef = useRef(null);
 
     // initial render & tracking props [bounds]
     useEffect(() => {
@@ -35,7 +37,7 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
     }, [props.boundsX, props.boundsY]);
 
     // UTILS & HELPERS
-    const getRandomNewTrollPosition = (mouseX, mouseY, trollRef) => {
+    const getRandomNewTrollPosition = (mouseX, mouseY) => {
         const signX = Math.random() < 0.5 ? 1 : -1;
         const signY = Math.random() < 0.5 ? 1 : -1;
         // TODO set bounds and rebouncing
@@ -51,7 +53,7 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
         setExploded(newExploded);
     };
 
-    const getDirectedNewTrollPosition = (mouseX, mouseY, trollRef) => {
+    const getDirectedNewTrollPosition = (mouseX, mouseY) => {
         // Getting line equation and calculating random points
         const trollCenterX = trollX + Math.floor(trollRef.current.offsetWidth / 2);
         const trollCenterY = trollY + Math.floor(trollRef.current.offsetHeight / 2);
@@ -60,21 +62,65 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
 
         var newTrollX = trollX;
         var newTrollY = trollY;
-        if (newTrollCoordinates.x) {
-            newTrollX = newTrollCoordinates.x;
-            newTrollY = newTrollCoordinates.y;
-        }
 
-        // detect collision using helper
-        const newExploded = false;
+        // if a valid new point is returned, perform collision detection with ExplodingCrossText
+        if (newTrollCoordinates.x) {
+            // detect collision using helper
+            const crossCenterX = crossX + Math.floor(crossRef.current.offsetWidth / 2);
+            const crossCenterY = crossY + Math.floor(crossRef.current.offsetHeight / 2);
+            const crossR = Math.abs(crossCenterX - crossX);
+
+            const tempNewTrollX = newTrollCoordinates.x;
+            const tempNewTrollY = newTrollCoordinates.y;
+
+            var isColliding = checkLineColliding(
+                trollCenterX,
+                trollCenterY,
+                tempNewTrollX,
+                tempNewTrollY,
+                crossCenterX,
+                crossCenterY,
+                crossR
+            );
+
+            console.log(isColliding);
+            if (isColliding) {
+                setTimeout(() => setExploded(true), 350);
+                newTrollX = crossX;
+                newTrollY = crossY;
+            } else {
+                newTrollX = tempNewTrollX;
+                newTrollY = tempNewTrollY;
+            }
+        }
 
         // set states
         setTrollX(newTrollX);
         setTrollY(newTrollY);
-        setExploded(newExploded);
     };
 
-    const getValidRandomPoint = (trollCenterX, trollCenterY, mouseX, mouseY, maxRadius = 300) => {
+    const getDistance = (x1, y1, x2, y2) => {
+        var a = x1 - x2;
+        var b = y1 - y2;
+        return Math.sqrt(a * a + b * b);
+    };
+
+    const getSlopeIntercept = (x1, y1, x2, y2) => {
+        const slope = (y2 - y1) / (x2 - x1);
+        return (x) => {
+            const y = slope * (x - x1) + y1;
+            return y;
+        };
+    };
+
+    const getValidRandomPoint = (
+        trollCenterX,
+        trollCenterY,
+        mouseX,
+        mouseY,
+        minRadius = 100,
+        maxRadius = 300
+    ) => {
         const slopeIntercept = getSlopeIntercept(trollCenterX, trollCenterY, mouseX, mouseY);
 
         var validX = [];
@@ -85,7 +131,8 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
             if (
                 yi < props.boundsY &&
                 yi > 100 &&
-                getDistance(trollCenterX, trollCenterY, xi, yi) < maxRadius
+                getDistance(trollCenterX, trollCenterY, xi, yi) <= maxRadius &&
+                getDistance(trollCenterX, trollCenterY, xi, yi) >= minRadius
             ) {
                 if (trollCenterX > mouseX && trollCenterY > mouseY) {
                     if (xi > trollCenterX && yi > trollCenterY) {
@@ -118,21 +165,35 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
         }
     };
 
-    const getDistance = (x1, y1, x2, y2) => {
-        var a = x1 - x2;
-        var b = y1 - y2;
-        return Math.sqrt(a * a + b * b);
-    };
+    const checkLineColliding = (
+        trollCenterX,
+        trollCenterY,
+        tempNewTrollX,
+        tempNewTrollY,
+        crossCenterX,
+        crossCenterY,
+        crossR
+    ) => {
+        const slopeIntercept = getSlopeIntercept(
+            trollCenterX,
+            trollCenterY,
+            tempNewTrollX,
+            tempNewTrollY
+        );
 
-    const getSlopeIntercept = (x1, y1, x2, y2) => {
-        const slope = (y2 - y1) / (x2 - x1);
-        return (x) => {
-            const y = slope * (x - x1) + y1;
-            return y;
-        };
+        var collidingLineX = [];
+        for (
+            var xi = Math.min(trollCenterX, tempNewTrollX);
+            xi <= Math.max(trollCenterX, tempNewTrollX);
+            xi++
+        ) {
+            var yi = slopeIntercept(xi);
+            if (getDistance(xi, yi, crossCenterX, crossCenterY) <= crossR) {
+                return true;
+            }
+        }
+        return false;
     };
-
-    // detect collision
 
     const takeMeThere = () => {
         if (!exploded) {
@@ -145,8 +206,14 @@ const TrollManager: React.FC<TrollManagerInterface> = (props) => {
 
     return (
         <div>
-            <ExplodingCrossText crossX={crossX} crossY={crossY} exploded={exploded} />
+            <ExplodingCrossText
+                crossRef={crossRef}
+                crossX={crossX}
+                crossY={crossY}
+                exploded={exploded}
+            />
             <TrollText
+                trollRef={trollRef}
                 trollText={props.trollText}
                 trollX={trollX}
                 trollY={trollY}

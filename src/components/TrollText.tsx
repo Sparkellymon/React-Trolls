@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 interface TrollTextInterface {
+    trollRef: any;
     trollText: string;
     trollX: number;
     trollY: number;
@@ -9,21 +10,19 @@ interface TrollTextInterface {
 }
 
 const TrollText: React.FC<TrollTextInterface> = (props) => {
-    const trollRef = useRef();
-
     useEffect(() => {
         console.log("[INFO] (TrollText / UE_2) Rerender");
     });
 
     const onTextHover = (e) => {
-        props.getNewTrollPosition(e.pageX, e.pageY, trollRef);
+        props.getNewTrollPosition(e.pageX, e.pageY);
     };
 
     return (
         <div>
             {!props.exploded ? (
                 <h1
-                    ref={trollRef}
+                    ref={props.trollRef}
                     style={{
                         position: `absolute`,
                         transition: `all 0.3s ease-in-out`,
